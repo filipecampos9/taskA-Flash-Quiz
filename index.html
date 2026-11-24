@@ -15,6 +15,7 @@
            border: 2px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; }
   button:hover:not(:disabled) { border-color: #888; }
   button:disabled { cursor: default; }
+  [hidden] { display: none !important; } /* senão `button { display: block }` anula o atributo hidden */
   .certa { border-color: #2a7; background: #e6f6ec; }
   .errada { border-color: #c33; background: #fbe8e8; }
   #next, #restart { text-align: center; background: #222; color: #fff; border-color: #222; }
