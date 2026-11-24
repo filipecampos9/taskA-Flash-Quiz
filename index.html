@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flash Quiz</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 560px; margin: 3rem auto; padding: 0 1rem; color: #222; background: #f6f5f2; }
+  h1 { margin-bottom: .25rem; }
+  #meta { color: #666; display: flex; justify-content: space-between; }
+  #timer { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; margin: .75rem 0 1.5rem; }
+  #bar { height: 100%; background: #2a7; width: 100%; }
+  #q { font-size: 1.3rem; margin-bottom: 1rem; }
+  button { display: block; width: 100%; padding: .8rem; margin: .5rem 0; font: inherit; text-align: left;
+           border: 2px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: #888; }
+  button:disabled { cursor: default; }
+  .certa { border-color: #2a7; background: #e6f6ec; }
+  .errada { border-color: #c33; background: #fbe8e8; }
+  #next, #restart { text-align: center; background: #222; color: #fff; border-color: #222; }
+</style>
+</head>
+<body>
+<h1>Flash Quiz</h1>
+<div id="meta"><span id="progress"></span><span id="score"></span></div>
+<div id="timer"><div id="bar"></div></div>
+<main id="game">
+  <p id="q"></p>
+  <div id="answers"></div>
+  <p id="feedback" aria-live="polite"></p>
+  <button id="next" hidden>Próxima</button>
+</main>
+<script>
+const TEMPO = 15; // segundos por pergunta
+const PERGUNTAS = [
+  ["Qual é a capital de Portugal?", ["Lisboa", "Porto", "Coimbra", "Braga"], 0],
+  ["Quantos planetas tem o Sistema Solar?", ["7", "8", "9", "10"], 1],
+  ["Quem escreveu 'Os Lusíadas'?", ["Fernando Pessoa", "Eça de Queirós", "Luís de Camões", "José Saramago"], 2],
+  ["Qual é o símbolo químico do ouro?", ["Ag", "Au", "Fe", "Go"], 1],
+  ["Em que ano chegou Vasco da Gama à Índia?", ["1492", "1500", "1498", "1510"], 2],
+  ["Qual é o maior oceano do mundo?", ["Atlântico", "Índico", "Ártico", "Pacífico"], 3],
+  ["Quanto é 7 × 8?", ["54", "56", "64", "48"], 1],
+  ["Qual é o rio mais longo da Península Ibérica?", ["Douro", "Tejo", "Guadiana", "Ebro"], 1],
+  ["Que linguagem corre nativamente no browser?", ["Python", "Java", "JavaScript", "C#"], 2],
+  ["Qual é o planeta conhecido como 'planeta vermelho'?", ["Vénus", "Júpiter", "Marte", "Saturno"], 2],
+];
+
+const $ = id => document.getElementById(id);
+let ordem, i, pontos, fim, tick;
+
+function iniciar() {
+  ordem = [...PERGUNTAS].sort(() => Math.random() - .5); // ponytail: baralhar enviesado, chega para 10 perguntas
+  i = 0; pontos = 0;
+  mostrar();
+}
+
+function mostrar() {
+  const [texto, opcoes] = ordem[i];
+  $("progress").textContent = `Pergunta ${i + 1}/${ordem.length}`;
+  $("score").textContent = `Pontos: ${pontos}`;
+  $("q").textContent = texto;
+  $("feedback").textContent = "";
+  $("next").hidden = true;
+  $("answers").replaceChildren(...opcoes.map((o, k) => {
+    const b = document.createElement("button");
+    b.textContent = o;
+    b.onclick = () => responder(k);
+    return b;
+  }));
+  fim = Date.now() + TEMPO * 1000;
+  clearInterval(tick);
+  tick = setInterval(() => {
+    const resta = Math.max(0, fim - Date.now()) / (TEMPO * 1000);
+    $("bar").style.width = resta * 100 + "%";
+    if (resta === 0) responder(-1);
+  }, 50);
+}
+
+function responder(k) {
+  clearInterval(tick);
+  const certa = ordem[i][2];
+  const botoes = $("answers").children;
+  for (const b of botoes) b.disabled = true;
+  botoes[certa].classList.add("certa");
+  if (k === certa) {
+    pontos++;
+    $("feedback").textContent = "Certo!";
+  } else {
+    if (k >= 0) botoes[k].classList.add("errada");
+    $("feedback").textContent = k < 0 ? "Tempo esgotado!" : "Errado!";
+  }
+  $("score").textContent = `Pontos: ${pontos}`;
+  $("next").hidden = false;
+  $("next").textContent = i + 1 < ordem.length ? "Próxima" : "Ver resultado";
+  $("next").focus();
+}
+
+$("next").onclick = () => (++i < ordem.length ? mostrar() : resultado());
+
+function resultado() {
+  $("progress").textContent = "Fim!";
+  $("q").textContent = `Acertaste ${pontos} de ${ordem.length}.`;
+  $("feedback").textContent = "";
+  const b = document.createElement("button");
+  b.id = "restart";
+  b.textContent = "Jogar outra vez";
+  b.onclick = iniciar;
+  $("answers").replaceChildren(b);
+  $("next").hidden = true;
+}
+
+iniciar();
+</script>
+</body>
+</html>
